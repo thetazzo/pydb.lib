@@ -4,7 +4,7 @@ print "Set log level:"
 lvl = input()
 
 
-dbc.load_database("localhost","root","user",lvl)
+dbc.load_mysql("localhost","root","user",lvl)
 
 db_name = "test_base"
 tb_name = "test"

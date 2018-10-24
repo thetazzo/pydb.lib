@@ -5,7 +5,7 @@ print "Set log level:"
 lvl = input()
 
 
-dbc.load_database("localhost","root","user",int(lvl))
+dbc.load_mysql("localhost","root","user",int(lvl))
 
 if(dbc.check() == False):
 	exit()

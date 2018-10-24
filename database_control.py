@@ -46,7 +46,7 @@ import MySQLdb
 DB = None
 CUR = None
 
-def load_database(hst,usr,pswd,lg_lvl=1):
+def load_mysql(hst,usr,pswd,lg_lvl=1):
  	global DB
  	global CUR
 	global log_level
