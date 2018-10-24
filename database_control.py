@@ -61,6 +61,9 @@ USERS = []
 
 log_level = 1
 
+### FLAGS ###
+is_database_loaded = False
+
 #### LOG LEVELS #####
 Database_Commands = 0
 User_Output = 1
@@ -95,6 +98,16 @@ def var_char(_x=0):
     """
     return "VARCHAR(" + str(_x) + ")"
 
+def load_database(db_name):
+    global is_database_loaded
+    if db_exists(db_name):
+        CUR.execute(USE + db_name)
+        log_on_level("USING: " + db_name,0)
+        is_database_loaded = True
+    else:
+        create_database(db_name)
+
+
 def db_exists(db_name=""):
     """Checks if database exists
     Keyword Arguments:
@@ -105,16 +118,11 @@ def db_exists(db_name=""):
     result = CUR.execute(show_database_like(db_name))
     if result:
         return True
-
     return False
 
-def table_exists(db_name,table_name):
-	if db_exists(db_name):
-		CUR.execute(USE + db_name)
-		result = CUR.execute(show_table_like(table_name))
-		if result:
-			return True
-	return False
+def table_exists(table_name):
+	result = CUR.execute(show_table_like(table_name))
+	return result
 
 def create_database(db_name):
     """Creates a database
@@ -157,26 +165,18 @@ def generate_attributes(attributes):
                 res += " "
     return res
 
-def create_table(db_name, table_name, attributes):
+def create_table(table_name, attributes):
     """Creates a table inside the specified database
     Arguments:
         db_name {string} -- name of the database
         table_name {string} -- name of the table
         attributes {dict} -- a dictionary that contaisn attributes of the table
     """
-    if db_exists(db_name):
-        CUR.execute(USE + db_name)
-        log_on_level("USING: " + db_name,0)
-        CUR.execute(CREATE_TABLE + table_name + "(" + generate_attributes(attributes) + ")")
-        log_on_level(CREATE_TABLE + table_name + "(" + generate_attributes(attributes) + ")",0)
-    else:
-        log_on_level("DATABASE: "  + db_name + " does not exist!",2)
+    CUR.execute(CREATE_TABLE + table_name + "(" + generate_attributes(attributes) + ")")
+    log_on_level(CREATE_TABLE + table_name + "(" + generate_attributes(attributes) + ")",0)
 
-def insert_into_table(db_name, table_name, users_array, attributes):
-    if db_exists(db_name):
-        CUR.execute(USE + db_name)
-        log_on_level("USING: " + db_name,0)
-        if table_exists(db_name,table_name):
+def insert_into_table(table_name, users_array, attributes):
+        if table_exists(table_name):
             res = INSERT_INTO + table_name + "("
             _x = 0
             for _x in attributes.keys():
@@ -193,7 +193,7 @@ def insert_into_table(db_name, table_name, users_array, attributes):
                 for u in users_array:
                     for aa in attributes[a]:
                         if aa == "PRIMARY KEY":
-                            if(check_if_value_exists(db_name,table_name,attributes[a][0],u.data[a])):
+                            if(check_if_value_exists(table_name,attributes[a][0],u.data[a])):
                                 users_array.remove(u)
 
 
@@ -211,34 +211,26 @@ def insert_into_table(db_name, table_name, users_array, attributes):
                 DB.commit()
         else:
             log_on_level("TABLE: " + table_name + " does not exit!",2)
-    else:
-        log_on_level("DATABASE: "  + db_name + " does not exist!",2)
 
-def create(db_name,table_name):
-	if(db_exists(db_name) == False):
-		create_database(db_name)
+def create(table_name):
+	if(table_exists(table_name) == False):
+		create_table(table_name,ATTRIB)
 
-	if(table_exists(db_name,table_name) == False):
-		create_table(db_name,table_name,ATTRIB)
-
-	insert_into_table(db_name,table_name,USERS,ATTRIB)
+	insert_into_table(table_name,USERS,ATTRIB)
 
 
-def get_data(db_name,tb_name,key,index):
-	if db_exists(db_name):
-		CUR.execute(USE + db_name)
-		if table_exists(db_name,tb_name):
-			if(index == -1):
-				CUR.execute("SELECT * FROM " + tb_name)
-			else:
-				CUR.execute("SELECT * FROM " + tb_name + " where " + key + " = " + str(index))
+def get_data(tb_name,key,index):
+    if table_exists(tb_name):
+        if(index == -1):
+            CUR.execute("SELECT * FROM " + tb_name)
+        else:
+             CUR.execute("SELECT * FROM " + tb_name + " where " + key + " = " + str(index))
+        s = CUR.fetchall()
+        return s
 
-			s = CUR.fetchall()
-			return s
-
-def log_data(db_name,tb_name,key,index,dindex):
-    if table_exists(db_name,tb_name):
-        d = get_data(db_name,tb_name,key,index)
+def log_data(tb_name,key,index,dindex):
+    if table_exists(tb_name):
+        d = get_data(tb_name,key,index)
         res = ""
         if  dindex == -1:
             for v in d:
@@ -256,16 +248,14 @@ def log_data(db_name,tb_name,key,index,dindex):
                 log_on_level(res,1)
 
 
-def check_if_value_exists(db_name,tb_name,attrib_name,value):
-    if db_exists(db_name):
-        CUR.execute(USE + db_name)
-        if table_exists(db_name,tb_name):
-            log_on_level("SELECT * from " + tb_name + " where " + attrib_name + " = " + "'" + value + "'",0)
-            CUR.execute("SELECT * from " + tb_name + " where " + attrib_name + " = " + "'" + value + "'")
-            s = CUR.fetchall()
-            if(len(s) > 0):
-                log_on_level(value + " exists in " + tb_name,2)
-                return True
+def check_if_value_exists(tb_name,attrib_name,value):
+    if table_exists(tb_name):
+        log_on_level("SELECT * from " + tb_name + " where " + attrib_name + " = " + "'" + value + "'",0)
+        CUR.execute("SELECT * from " + tb_name + " where " + attrib_name + " = " + "'" + value + "'")
+        s = CUR.fetchall()
+        if(len(s) > 0):
+            log_on_level(value + " exists in " + tb_name,2)
+            return True
     return False
 def add_attribute(a):
     global ATTRIB
