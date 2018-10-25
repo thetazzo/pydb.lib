@@ -78,7 +78,7 @@ def set_log_level(lgl):
 
 def check():
 	if(DB ==  None):
-		log("ERROR: No database loaded!!")
+		log("ERROR: No MySQL loaded!!")
 		return False
 	return True
 
