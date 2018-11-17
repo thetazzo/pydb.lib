@@ -1,23 +1,25 @@
 import database_control as dbc
-
-print "Set log level:"
-lvl = input()
+from database_control import User
 
 
-dbc.load_mysql("localhost","root","user",lvl)
+dbc.load_mysql("localhost","root","user")
 
-db_name = "test_base"
+database_name = "tilcinet"
+table_name = "users"
 
+dbc.load_database(database_name)
 
-dbc.load_database(db_name)
+dbc.insert_into_table(table_name,User(["Mark M."]))
 
-tb_name = "test"
+##res = dbc.get_table_attributes(table_name)
 
-dbc.add_attribute(["ime",dbc.var_char(20),"NOT NULL","PRIMARY KEY"])
+##t = {}
 
-
-dbc.add_user(dbc.User(["Tilen K."]))
-
-dbc.create(tb_name)
-
+##for r in range(len(res)):
+##  for k in res[r]:
+##    if k is "auto_increment":
+##      r = r + 1
+##  t = res[r]
+  
+##print t
 dbc.DB.close()

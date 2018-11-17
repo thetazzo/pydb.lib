@@ -1,22 +1,18 @@
 import database_control as dbc
 from database_control import User
 
-print "Set log level:"
-lvl = input()
 
-dbc.load_mysql("localhost","root","user",int(lvl))
-
-if(dbc.check() == False):
-	exit()
+dbc.load_mysql("localhost","root","user")
 
 database_name = "tilcinet"
 table_name = "users"
-
 
 dbc.load_database(database_name)
 
 dbc.add_attribute(["id","INT","NOT NULL PRIMARY KEY","AUTO_INCREMENT"])
 dbc.add_attribute(["ime",dbc.var_char(20),"NOT NULL"])
+
+print dbc.ATTRIB  
 
 if(dbc.check_if_value_exists(table_name,"ime","Tilen O.") != True):
     dbc.add_user(User(["Tilen O."]))

@@ -14,6 +14,8 @@ class User(object):
     def __init__(self, data):
         self.data = data
 
+VERSION = "1.0"
+
 CREATE_DATABASE = "CREATE DATABASE IF NOT EXISTS "
 DROP_DATABASE = "DROP DATABASE "
 
@@ -46,20 +48,23 @@ import MySQLdb
 DB = None
 CUR = None
 
-def load_mysql(hst,usr,pswd,lg_lvl=1):
- 	global DB
- 	global CUR
-	global log_level
- 	DB = MySQLdb.connect(host=hst,user=usr,passwd = pswd)
- 	CUR = DB.cursor()
-	log_level = lg_lvl
- 	log_on_level("Database " + hst + " loaded!",2)
+log_level = 1
+
+def load_mysql(hst,usr,pswd):
+    global DB
+    global CUR
+    global log_level
+    DB = MySQLdb.connect(host=hst,user=usr,passwd = pswd)
+    CUR = DB.cursor()
+    print "Set log level:"
+    set_log_level()
+    log_on_level("Database " + hst + " loaded!",2)
+    if(check() == False):
+	    exit()
 
 
 ATTRIB = {}
 USERS = []
-
-log_level = 1
 
 ### FLAGS ###
 is_database_loaded = False
@@ -72,9 +77,16 @@ Debug = 3
 
 ###############################################################################
 
-def set_log_level(lgl):
-	global log_level
-	log_level = lgl
+def set_log_level():
+    lgl = input()
+    global log_level
+    while(lgl <= -1):
+        print("Database_Commands: " + str(Database_Commands))
+        print("User_Output: " + str(User_Output))
+        print("Nothing: " + str(Nothing))
+        print("Debug: " + str(Debug))
+        lgl = input()
+    log_level = lgl
 
 def check():
 	if(DB ==  None):
@@ -106,6 +118,7 @@ def load_database(db_name):
         is_database_loaded = True
     else:
         create_database(db_name)
+        load_database(db_name)
 
 
 def db_exists(db_name=""):
@@ -121,8 +134,20 @@ def db_exists(db_name=""):
     return False
 
 def table_exists(table_name):
-	result = CUR.execute(show_table_like(table_name))
-	return result
+  global ATTRIB
+  result = CUR.execute(show_table_like(table_name))
+  if(result == 1 and len(ATTRIB) == 0):
+    print "creating attribs"
+    res = get_table_attributes(table_name)
+    ##for r in range(len(res)):
+    ##  for k in res[r]:
+    ##    if k is "auto_increment":
+    ##      r = r + 1
+    ##  ATTRIB = res[r]
+    for r in range(len(res)):
+      ATTRIB[r] = res[r]
+    print ATTRIB
+  return result
 
 def create_database(db_name):
     """Creates a database
@@ -175,7 +200,15 @@ def create_table(table_name, attributes):
     CUR.execute(CREATE_TABLE + table_name + "(" + generate_attributes(attributes) + ")")
     log_on_level(CREATE_TABLE + table_name + "(" + generate_attributes(attributes) + ")",0)
 
-def insert_into_table(table_name, users_array, attributes):
+def get_table_attributes(table_name):
+  CUR.execute("DESCRIBE " + table_name + ";")
+  out = CUR.fetchall();
+  return out
+  
+def insert_into_table(table_name,value):
+  insert_into_table_array(table_name,[value])
+
+def insert_into_table_array(table_name, users_array, attributes):
         if table_exists(table_name):
             res = INSERT_INTO + table_name + "("
             _x = 0
@@ -215,8 +248,7 @@ def insert_into_table(table_name, users_array, attributes):
 def create(table_name):
 	if(table_exists(table_name) == False):
 		create_table(table_name,ATTRIB)
-
-	insert_into_table(table_name,USERS,ATTRIB)
+	insert_into_table_array(table_name,USERS,ATTRIB)
 
 
 def get_data(tb_name,key,index):
@@ -227,6 +259,7 @@ def get_data(tb_name,key,index):
              CUR.execute("SELECT * FROM " + tb_name + " where " + key + " = " + str(index))
         s = CUR.fetchall()
         return s
+    return None
 
 def log_data(tb_name,key,index,dindex):
     if table_exists(tb_name):
@@ -263,3 +296,6 @@ def add_attribute(a):
 
 def add_user(user):
 	USERS.append(user)
+
+def version():
+    log(VERSION)
